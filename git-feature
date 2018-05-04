@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# Setting constants
+
+MAIN_BRANCH="main"
+DEV_BRANCH="development"
+FEATURE_PREFIX="feature/"
+
+# Validating GIT
+
+if [[ ! is_git_available() ]]; then
+  echo "Please install GIT before running this command."
+  exit 1 
+fi
+
+if [[ ! is_git_repository() ]]; then
+  echo "This folder is not monitored by a GIT repository."
+  exit 2
+fi
+
+if [[ ! is_branch_existant $MAIN_BRANCH ]]; then
+  echo "Do your first commit to master before proceeding with Another-Git-Flow."
+  exit 3
+fi
+
+
+# Commands
+
+case $1 in
+
+  init)
+    if [[ ! is_branch_existant $DEV_BRANCH ]]; then
+      local current_branch=$(get_current_branch)
+      if [[ $MAIN_BRANCH -ne $current_branch ]]; then
+        git checkout $MAIN_BRANCH        
+      fi
+      git branch $DEV_BRANCH
+      git checkout $DEV_BRANCH
+      echo "Repository prepared for Another-Git-Flow."
+      exit 0
+    fi
+    ;;
+
+  
+
+  
+esac
+
+
+
+# Functions
+
+is_git_available() {
+  git --version 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+is_git_repository() {
+  git rev-parse 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+is_branch_existant() {
+
+  if [[ -z $1 ]]; then
+    echo "Please provide a branch name."
+    exit 1
+  fi
+
+  git rev-parse --verify --quiet $1 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+get_current_branch() {
+  local current_branch=$(git rev-parse --abbrev-ref HEAD)
+  echo "$current_branch"
+}
