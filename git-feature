@@ -3,6 +3,7 @@
 # Setting constants
 
 MAIN_BRANCH='main'
+STAGE_BRANCH='stage'
 FEATURE_PREFIX='feature/'
 
 # Validating GIT
@@ -17,7 +18,7 @@ if [[ ! is_git_repository() ]]; then
   exit 2
 fi
 
-if [[ ! is_branch_existant $MAIN_BRANCH ]]; then
+if [[ ! is_branch_existent $MAIN_BRANCH ]]; then
   echo 'Do your first commit to master before proceeding with Another-Git-Flow.'
   exit 3
 fi
@@ -34,7 +35,7 @@ case $1 in
     fi
     local feature_branch="$FEATURE_PREFIX$2"
 
-    if [[ is_branch_existant $feature_branch ]]; then
+    if [[ is_branch_existent $feature_branch ]]; then
       echo "Feature already exists."
       exit 5
     fi
@@ -46,28 +47,35 @@ case $1 in
     ;;
 
   delete)
+    local feature_branch=''
     if [[ -n $2 ]]; then
-      echo 'Please provide which feature should be deleted.'
-      exit 6
+      local current_branch=$(get_current_branch)
+      if [[ $current_branch != "$FEATURE_PREFIX"* ]]; then
+        echo "Please provide the feature which should be deleted or checkout to a valid feature branch."
+        exit 6
+      fi
+      feature_branch=$current_branch
+    else
+      feature_branch="$FEATURE_PREFIX$2"
+      if [[ ! is_branch_existent $feature_branch ]]; then
+        echo "Feature $feature_branch does not exist."
+        exit 7
+      fi
     fi
-    local feature_branch="$FEATURE_PREFIX$2"
-
-    if [[ ! is_branch_existant $feature_branch ]]; then
-      echo "Feature $feature_branch does not exist."
-      exit 7
-    fi
-
     ensure_master_branch
     git branch -D $feature_branch
-    echo "Feature $feature_branch deleted."
+    echo "Feature $feature_branch deleted successfully."
     exit 0
     ;;
+
+  stage)
+    
 
   *)
     echo 'Please provide which subcommand you want to execute with git-feature:'
     echo 'init "feature name"'
     echo 'delete "feature name"'
-    exit 8
+    exit 99
     ;;  
 esac
 
@@ -85,7 +93,7 @@ is_git_repository() {
   return [[ $? -eq 0 ]]
 }
 
-is_branch_existant() {
+is_branch_existent() {
   if [[ -z $1 ]]; then
     echo 'Please provide a branch name.'
     exit 1
