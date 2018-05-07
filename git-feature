@@ -30,17 +30,17 @@ get_current_branch() {
 ### Validating GIT
 if [[ ! $(is_git_available) ]]; then
   echo 'Please install GIT before running this command.'
-  exit 1 
+  exit 11 
 fi
 
 if [[ ! $(is_git_repository) ]]; then
   echo 'This folder is not monitored by a GIT repository.'
-  exit 2
+  exit 12
 fi
 
 if [[ ! $(is_branch_existent $MAIN_BRANCH) ]]; then
   echo 'Do your first commit to master before proceeding with Another-Git-Flow.'
-  exit 3
+  exit 13
 fi
 
 
@@ -50,13 +50,13 @@ case $1 in
   init)
     if [[ -z $2 ]]; then
       echo 'Please provide which feature should be initiated.'
-      exit 4
+      exit 14
     fi
     local feature_branch="$FEATURE_PREFIX$2"
 
     if [[ $(is_branch_existent $feature_branch) ]]; then
       echo "Feature already exists."
-      exit 5
+      exit 15
     fi
     if [[ $MAIN_BRANCH -ne $(get_current_branch) ]]; then
       git checkout master
@@ -74,7 +74,7 @@ case $1 in
     fi
     if [[ $MAIN_BRANCH -eq $2 || $MAIN_BRANCH -eq $branch || ! $(is_branch_existent $branch) ]]; then
       echo "Invalid branch for deletion."
-      exit 6
+      exit 16
     fi
     printf "%s \n" "Are you sure you want to delete branch $branch? [y/n]"
     if read -q; then
@@ -83,32 +83,6 @@ case $1 in
       fi
       git branch -D $feature_branch
       echo "Feature $feature_branch deleted successfully."
-    else
-      echo 'Aborted by user.'
-    fi
-    exit 0
-    ;;
-
-  stage)
-    if [[ -z $2 ]]; then
-      local branch=$(get_current_branch)
-    else
-      local branch="$FEATURE_PREFIX$2"
-    fi
-    if [[ $MAIN_BRANCH -eq $2 || $MAIN_BRANCH -eq $branch || ! $(is_branch_existent $branch) ]]; then
-      echo "Invalid branch for staging environment."
-      exit 7
-    fi
-    printf "%s \n" "Are you sure you want to make branch $branch eligible for release? [y/n]"
-    if read -q; then
-      if [[ ! $(is_branch_existent $STAGE_BRANCH) ]]; then
-        if [[ $MAIN_BRANCH -ne $(get_current_branch) ]]; then
-          git checkout $MAIN_BRANCH
-        fi
-        git branch $STAGE_BRANCH
-      fi
-      git checkout $STAGE_BRANCH
-      git merge $branch
     else
       echo 'Aborted by user.'
     fi
