@@ -1,0 +1,88 @@
+
+#!/usr/bin/env bash
+
+### Setting constants
+MAIN_BRANCH='master'
+STAGE_BRANCH='stage'
+
+### Functions
+is_git_available() {
+  git --version 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+is_git_repository() {
+  git rev-parse 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+is_branch_existent() {
+  git rev-parse --verify --quiet $1 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+get_current_branch() {
+  local current_branch=$(git rev-parse --abbrev-ref HEAD)
+  echo "$current_branch"
+}
+
+
+### Validating GIT
+if [[ ! $(is_git_available) ]]; then
+  echo 'Please install GIT before running this command.'
+  exit 21 
+fi
+
+if [[ ! $(is_git_repository) ]]; then
+  echo 'This folder is not monitored by a GIT repository.'
+  exit 22
+fi
+
+if [[ ! $(is_branch_existent $MAIN_BRANCH) ]]; then
+  echo 'Do your first commit to master before proceeding with Another-Git-Flow.'
+  exit 23
+fi
+
+
+### Commands
+case $1 in
+  clear)
+    printf "%s \n" "Are you sure you want to delete the stage branch? [y/n]"
+    if read -q; then
+      if [[ $STAGE_BRANCH -eq $(get_current_branch) ]]; then
+        git checkout $MAIN_BRANCH
+      fi
+      git branch -D $STAGE_BRANCH
+      echo "Stage branch deleted successfully."
+    else
+      echo 'Aborted by user.'
+    fi
+    exit 0
+    ;;
+
+  *)
+    if [[ -z $1 ]]; then
+      local branch=$(get_current_branch)
+    else
+      local branch="$FEATURE_PREFIX$1"
+    fi
+    if [[ $MAIN_BRANCH -eq $1 || $MAIN_BRANCH -eq $branch || ! $(is_branch_existent $branch) ]]; then
+      echo "Invalid branch for staging environment."
+      exit 24
+    fi
+    printf "%s \n" "Are you sure you want to make branch $branch eligible for release? [y/n]"
+    if read -q; then
+      if [[ ! $(is_branch_existent $STAGE_BRANCH) ]]; then
+        if [[ $MAIN_BRANCH -ne $(get_current_branch) ]]; then
+          git checkout $MAIN_BRANCH
+        fi
+        git branch $STAGE_BRANCH
+      fi
+      git checkout $STAGE_BRANCH
+      git merge $branch
+    else
+      echo 'Aborted by user.'
+    fi
+    exit 0
+    ;;
+esac
