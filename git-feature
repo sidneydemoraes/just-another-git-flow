@@ -1,13 +1,33 @@
 #!/usr/bin/env bash
 
-# Setting constants
-
-MAIN_BRANCH='main'
+### Setting constants
+MAIN_BRANCH='master'
 STAGE_BRANCH='stage'
 FEATURE_PREFIX='feature/'
 
-# Validating GIT
+### Functions
+is_git_available() {
+  git --version 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
 
+is_git_repository() {
+  git rev-parse 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+is_branch_existent() {
+  git rev-parse --verify --quiet $1 2>&1 >/dev/null
+  return [[ $? -eq 0 ]]
+}
+
+get_current_branch() {
+  local current_branch=$(git rev-parse --abbrev-ref HEAD)
+  echo "$current_branch"
+}
+
+
+### Validating GIT
 if [[ ! is_git_available() ]]; then
   echo 'Please install GIT before running this command.'
   exit 1 
@@ -24,12 +44,11 @@ if [[ ! is_branch_existent $MAIN_BRANCH ]]; then
 fi
 
 
-# Commands
-
+### Commands
 case $1 in
 
   init)
-    if [[ -n $2 ]]; then
+    if [[ -z $2 ]]; then
       echo 'Please provide which feature should be initiated.'
       exit 4
     fi
@@ -39,37 +58,38 @@ case $1 in
       echo "Feature already exists."
       exit 5
     fi
-
-    ensure_master_branch
+    if [[ $MAIN_BRANCH -ne $(get_current_branch) ]]; then
+      git checkout master
+    fi
     git checkout -b $feature_branch
     echo "Feature $feature_branch initiated."
     exit 0
     ;;
 
-  delete)
-    local feature_branch=''
-    if [[ -n $2 ]]; then
-      local current_branch=$(get_current_branch)
-      if [[ $current_branch != "$FEATURE_PREFIX"* ]]; then
-        echo "Please provide the feature which should be deleted or checkout to a valid feature branch."
-        exit 6
-      fi
-      feature_branch=$current_branch
-    else
-      feature_branch="$FEATURE_PREFIX$2"
-      if [[ ! is_branch_existent $feature_branch ]]; then
-        echo "Feature $feature_branch does not exist."
-        exit 7
-      fi
-    fi
-    ensure_master_branch
-    git branch -D $feature_branch
-    echo "Feature $feature_branch deleted successfully."
-    exit 0
-    ;;
-
-  stage)
-    
+#  delete)
+#    local feature_branch=''
+#    if [[ -n $2 ]]; then
+#      local current_branch=$(get_current_branch)
+#      if [[ $current_branch != "$FEATURE_PREFIX"* ]]; then
+#        echo "Please provide the feature which should be deleted or checkout to a valid feature branch."
+#        exit 6
+#      fi
+#      feature_branch=$current_branch
+#    else
+#      feature_branch="$FEATURE_PREFIX$2"
+#      if [[ ! is_branch_existent $feature_branch ]]; then
+#        echo "Feature $feature_branch does not exist."
+#        exit 7
+#      fi
+#    fi
+#    ensure_master_branch
+#    git branch -D $feature_branch
+#    echo "Feature $feature_branch deleted successfully."
+#    exit 0
+#    ;;
+#
+#  stage)
+#    
 
   *)
     echo 'Please provide which subcommand you want to execute with git-feature:'
@@ -80,36 +100,3 @@ case $1 in
 esac
 
 
-
-# Functions
-
-is_git_available() {
-  git --version 2>&1 >/dev/null
-  return [[ $? -eq 0 ]]
-}
-
-is_git_repository() {
-  git rev-parse 2>&1 >/dev/null
-  return [[ $? -eq 0 ]]
-}
-
-is_branch_existent() {
-  if [[ -z $1 ]]; then
-    echo 'Please provide a branch name.'
-    exit 1
-  fi
-  git rev-parse --verify --quiet $1 2>&1 >/dev/null
-  return [[ $? -eq 0 ]]
-}
-
-get_current_branch() {
-  local current_branch=$(git rev-parse --abbrev-ref HEAD)
-  echo "$current_branch"
-}
-
-ensure_master_branch() {
-  local current_branch=$(get_current_branch)
-  if [[ $MAIN_BRANCH -ne $current_branch ]]; then
-    git checkout $MAIN_BRANCH        
-  fi
-}
