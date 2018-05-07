@@ -6,3 +6,7 @@ GIT
 
 ### Installation
 Copy all git-* files to `/usr/local/bin`.
+
+### License
+WTFPL
+http://www.wtfpl.net/
