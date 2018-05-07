@@ -28,17 +28,17 @@ get_current_branch() {
 
 
 ### Validating GIT
-if [[ ! is_git_available() ]]; then
+if [[ ! $(is_git_available) ]]; then
   echo 'Please install GIT before running this command.'
   exit 1 
 fi
 
-if [[ ! is_git_repository() ]]; then
+if [[ ! $(is_git_repository) ]]; then
   echo 'This folder is not monitored by a GIT repository.'
   exit 2
 fi
 
-if [[ ! is_branch_existent $MAIN_BRANCH ]]; then
+if [[ ! $(is_branch_existent $MAIN_BRANCH) ]]; then
   echo 'Do your first commit to master before proceeding with Another-Git-Flow.'
   exit 3
 fi
@@ -54,7 +54,7 @@ case $1 in
     fi
     local feature_branch="$FEATURE_PREFIX$2"
 
-    if [[ is_branch_existent $feature_branch ]]; then
+    if [[ $(is_branch_existent $feature_branch) ]]; then
       echo "Feature already exists."
       exit 5
     fi
@@ -66,30 +66,31 @@ case $1 in
     exit 0
     ;;
 
-#  delete)
-#    local feature_branch=''
-#    if [[ -n $2 ]]; then
-#      local current_branch=$(get_current_branch)
-#      if [[ $current_branch != "$FEATURE_PREFIX"* ]]; then
-#        echo "Please provide the feature which should be deleted or checkout to a valid feature branch."
-#        exit 6
-#      fi
-#      feature_branch=$current_branch
-#    else
-#      feature_branch="$FEATURE_PREFIX$2"
-#      if [[ ! is_branch_existent $feature_branch ]]; then
-#        echo "Feature $feature_branch does not exist."
-#        exit 7
-#      fi
-#    fi
-#    ensure_master_branch
-#    git branch -D $feature_branch
-#    echo "Feature $feature_branch deleted successfully."
-#    exit 0
-#    ;;
-#
+  delete)
+    if [[ -z $2 ]]; then
+      local branch=$(get_current_branch)
+    else
+      local branch="$FEATURE_PREFIX$2"
+    fi
+    if [[ $MAIN_BRANCH -eq $2 || $MAIN_BRANCH -eq $branch || ! $(is_branch_existent $branch) ]]; then
+      echo "Invalid branch for deletion."
+      exit 6
+    fi
+    printf "%s \n" "Are you sure you want to delete branch $branch? [y/n]"
+    if read -q; then
+      if [[ $branch -eq $(get_current_branch) ]]; then
+        git checkout $MAIN_BRANCH
+      fi
+      git branch -D $feature_branch
+      echo "Feature $feature_branch deleted successfully."
+    else
+      echo "Aborted by user"
+    fi
+    exit 0
+    ;;
+
 #  stage)
-#    
+    
 
   *)
     echo 'Please provide which subcommand you want to execute with git-feature:'
