@@ -1,4 +1,4 @@
-# This is **ANOTHER GIT FLOW**
+# This is **JUST ANOTHER GIT FLOW**
 _Created by Sidney de Moraes_.
 
 ### Pre Requisites
